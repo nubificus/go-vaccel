@@ -1,0 +1,70 @@
+name: Build
+
+on:
+  push:
+      branches:
+        - main
+
+  pull_request:
+      branches:
+        - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: [ self-hosted, "${{ matrix.archconfig }}", go]
+    strategy:
+      matrix:
+        archconfig: [ x86_64, aarch64 ]
+      fail-fast: false
+    
+    steps:
+    - name: Cleanup previous jobs
+      run: |
+        echo "Cleaning up previous runs"
+        sudo rm -rf ${{ github.workspace }}/*
+        sudo rm -rf ${{ github.workspace }}/.??*
+        
+    - name: Checkout code
+      uses: actions/checkout@v3
+    - name: Display Go version
+      run: |
+        go version
+
+    - name: Find SHA
+      run: |
+        if [[ "${{github.event.pull_request.head.sha}}" != "" ]]
+        then
+          echo "ARTIFACT_SHA=$(echo ${{github.event.pull_request.head.ref}})" >> $GITHUB_ENV
+        else
+          echo "ARTIFACT_SHA=$(echo ${GITHUB_REF##*/})" >> $GITHUB_ENV
+        fi
+
+    - name: Install vaccel
+      run: |
+       git clone https://github.com/cloudkernels/vaccelrt --recursive
+       cd vaccelrt
+       mkdir build
+       cd build
+       cmake ../ -D BUILD_PLUGIN_NOOP=ON
+       make 
+       cpack
+       sudo dpkg -i vaccel*.deb
+       
+    - name: Build binaries
+      run: |
+       make
+
+    - name: Test binaries
+      run: |
+       sudo mkdir -p /run/user/1001
+       sudo chown runner.runner /run/user/1001
+       export VACCEL_DEBUG_LEVEL=4
+       export VACCEL_BACKENDS=/usr/local/lib/libvaccel-noop.so
+       ./bin/noop
+       ./bin/classify /usr/local/share/images/example.jpg
+
+    - name: uninstall vaccel
+      run: |
+       sudo apt remove -y vaccel
+

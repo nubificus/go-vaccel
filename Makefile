@@ -1,6 +1,10 @@
 
-all:
-	go build -o bin/cgo cgo.go
+all: noop classify
+
+noop:
+	go build -o bin/noop noop.go
+classify:
+	go build -o bin/classify classify.go
 
 clean:
 	rm bin/*

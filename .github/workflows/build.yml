@@ -46,7 +46,7 @@ jobs:
        cd vaccelrt
        mkdir build
        cd build
-       cmake ../ -D BUILD_PLUGIN_NOOP=ON
+       cmake ../ -D BUILD_PLUGIN_NOOP=ON -D BUILD_EXAMPLES=ON
        make 
        cpack
        sudo dpkg -i vaccel*.deb
@@ -56,13 +56,15 @@ jobs:
        make
 
     - name: Test binaries
+      env:
+              VACCEL_BACKENDS: /usr/local/lib/libvaccel-noop.so
+              VACCEL_DEBUG_LEVEL: 4
       run: |
        sudo mkdir -p /run/user/1001
        sudo chown runner.runner /run/user/1001
-       export VACCEL_DEBUG_LEVEL=4
-       export VACCEL_BACKENDS=/usr/local/lib/libvaccel-noop.so
        ./bin/noop
        ./bin/classify /usr/local/share/images/example.jpg
+       ./bin/exec /usr/local/lib/libmytestlib.so 10
 
     - name: uninstall vaccel
       run: |

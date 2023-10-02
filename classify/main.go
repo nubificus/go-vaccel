@@ -19,7 +19,6 @@ import "C"
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"unsafe"
 )
@@ -34,32 +33,36 @@ func main() {
 	// Get the filename from command line argument
 	filePath := os.Args[1]
 
-	imageBytes, err := ioutil.ReadFile(filePath)
+	imageBytes, err := os.ReadFile(filePath)
 	if err != nil {
 		fmt.Printf("Error reading file: %s\n", err)
-		return
+		os.Exit(1)
 	}
 
 	// Convert the Go byte slice to a C array
 	cImageBytes := (*C.uchar)(&imageBytes[0])
 
-
 	// C Library
-	session := C.mysesstype{};
-	flags := 0;
+	session := C.mysesstype{}
+	flags := 0
 	cText := (*C.uchar)(C.malloc(C.size_t(256)))
 	defer C.free(unsafe.Pointer(cText)) // Free the memory when done
 	cOutImageName := (*C.uchar)(C.malloc(C.size_t(256)))
 	defer C.free(unsafe.Pointer(cOutImageName)) // Free the memory when done
 
-	C.vaccel_sess_init(&session, C.uint32_t(flags));
-	//C.vaccel_noop(&session);
-	C.vaccel_image_classification(&session, unsafe.Pointer(cImageBytes), cText, cOutImageName, C.ulong(len(imageBytes)), C.ulong(256), C.ulong(256));
-	C.vaccel_sess_free(&session);
-	//C.free(unsafe.Pointer(mystr))
-
-	// Inline C
-	//C.myPrintFunction2()
-
-	//fmt.Println("-------------------------------")
+	e := C.vaccel_sess_init(&session, C.uint32_t(flags))
+	if e != 0 {
+		fmt.Println("session not created")
+		os.Exit(int(e))
+	}
+	e = C.vaccel_image_classification(&session, unsafe.Pointer(cImageBytes), cText, cOutImageName, C.ulong(len(imageBytes)), C.ulong(256), C.ulong(256))
+	if e != 0 {
+		fmt.Println("image classification failed")
+		os.Exit(int(e))
+	}
+	e = C.vaccel_sess_free(&session)
+	if e != 0 {
+		fmt.Println("session not freed ")
+		os.Exit(int(e))
+	}
 }

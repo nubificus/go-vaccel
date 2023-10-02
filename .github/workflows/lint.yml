@@ -14,17 +14,35 @@ permissions:
 jobs:
   golangci:
     name: lint
-    runs-on: ubuntu-latest
+    runs-on: [ self-hosted, go]
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v4
-        with:
-          go-version: '1.20'
-          cache: false
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3
-        with:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    - name: Display Go version
+      run: |
+        go version
+
+    - name: Install vaccel
+      run: |
+       git clone https://github.com/cloudkernels/vaccelrt --recursive
+       cd vaccelrt
+       mkdir build
+       cd build
+       cmake ../ -D BUILD_PLUGIN_NOOP=ON -D BUILD_EXAMPLES=ON
+       make 
+       cpack
+       sudo dpkg -i vaccel*.deb
+       
+    - name: golangci-lint
+      uses: golangci/golangci-lint-action@v3
+      with:
           version: v1.53
 
           # show only new issues if it's a pull request. The default value is `false`.
           only-new-issues: true
+
+    - name: uninstall vaccel
+      run: |
+       sudo apt remove -y vaccel
+
+

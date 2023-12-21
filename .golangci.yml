@@ -4,6 +4,7 @@ linters:
   - gofmt
   - goimports
   - gosec
+  - gocritic
   - misspell
   - revive
   - unused

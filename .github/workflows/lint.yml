@@ -16,8 +16,14 @@ permissions:
 jobs:
   golangci:
     name: lint
-    runs-on: [ self-hosted, go]
+    runs-on: [ self-hosted, go, x86_64]
     steps:
+    - name: Cleanup previous jobs
+      run: |
+        echo "Cleaning up previous runs"
+        sudo rm -rf ${{ github.workspace }}/*
+        sudo rm -rf ${{ github.workspace }}/.??*
+ 
     - name: Checkout code
       uses: actions/checkout@v3
     - name: Display Go version
@@ -37,6 +43,8 @@ jobs:
        
     - name: golangci-lint
       uses: golangci/golangci-lint-action@v3
+      env:
+              PKG_CONFIG_PATH: /usr/local/share
       with:
           version: v1.53
 

@@ -1,39 +1,34 @@
 package main
 
-/*
-
-#cgo CFLAGS: -I./src
-#cgo LDFLAGS: -L/usr/local/lib -lvaccel -Wl,-rpath=/usr/local/lib -ldl
-#include <vaccel.h>
-#include <stdlib.h>
-#include <stdio.h>
-
-void myPrintFunction2() {
-	printf("Hello from inline C\n");
-}
-
-*/
-import "C"
-
 import (
 	"fmt"
+	"os"
+
+	"github.com/nubificus/go-vaccel/vaccel"
 )
 
 func main() {
 
-	fmt.Println("-------------------------------")
-	var session C.struct_vaccel_session
-	flags := 0
-	e := C.vaccel_sess_init(&session, C.uint32_t(flags))
-	if e != 0 {
-		fmt.Println("Session not initialized")
+	/* Session */
+	var session vaccel.Session
+	err := vaccel.SessionInit(&session, 0)
+
+	if err != 0 {
+		fmt.Println("error initializing session")
+		os.Exit(int(err))
 	}
-	e = C.vaccel_noop(&session)
-	if e != 0 {
-		fmt.Println("Session not initialized")
+
+	/* Run the operation */
+	err = vaccel.NoOp(&session)
+
+	if err != 0 {
+		fmt.Println("An error occurred while running the operation")
+		os.Exit(err)
 	}
-	e = C.vaccel_sess_free(&session)
-	if e != 0 {
-		fmt.Println("Session not initialized")
+
+	/* Free Session */
+	if vaccel.SessionFree(&session) != 0 {
+		fmt.Println("An error occurred while freeing the session")
 	}
+
 }

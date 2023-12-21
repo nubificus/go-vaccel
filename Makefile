@@ -1,8 +1,7 @@
 
-default: build ;
+default: build
 
-
-build: noop classify exec
+build: noop classify exec nonser
 
 prepare:
 	@go mod tidy
@@ -18,7 +17,10 @@ classify: prepare
 exec: prepare
 	go build -o bin/exec exec/main.go
 
+nonser: prepare 
+	go build -o bin/nonser nonser/main.go
+
 clean:
 	rm bin/*
 
-all: noop classify exec
+all: noop classify exec nonser

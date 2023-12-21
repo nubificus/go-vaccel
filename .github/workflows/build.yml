@@ -52,13 +52,18 @@ jobs:
        sudo dpkg -i vaccel*.deb
        
     - name: Build binaries
+      env:
+              PKG_CONFIG_PATH: /usr/local/share
       run: |
+       sudo apt update
+       sudo apt install pkg-config
        make
 
     - name: Test binaries
       env:
               VACCEL_BACKENDS: /usr/local/lib/libvaccel-noop.so
               VACCEL_DEBUG_LEVEL: 4
+              LD_LIBRARY_PATH: /usr/local/lib/
       run: |
        sudo mkdir -p /run/user/1001
        sudo chown runner.runner /run/user/1001

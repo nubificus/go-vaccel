@@ -1,102 +1,130 @@
 package main
 
-/*
-
-#cgo CFLAGS: -I./src
-#cgo LDFLAGS: -L/usr/local/lib -lvaccel -Wl,-rpath=/usr/local/lib -ldl
-#include <vaccel.h>
-#include <stdlib.h>
-#include <stdio.h>
-
-void myPrintFunction2() {
-	printf("Hello from inline C\n");
-}
-
-typedef struct vaccel_session mysesstype;
-typedef unsigned int uinttype;
-*/
-import "C"
-
 import (
-	"fmt"
-	"os"
+	"github.com/nubificus/go-vaccel/vaccel"
 	"strconv"
+	"os"
+	"fmt"
 	"unsafe"
+	"C"
 )
 
 func main() {
 
+	/* Read User Args */
 	if len(os.Args) < 3 {
 		fmt.Println("Usage: ./exec <filename> <input>")
 		return
 	}
 
-	// Get the filename from command line argument
 	filePath := os.Args[1]
+	input    := os.Args[2]
 
-	input := os.Args[2]
+	inputInt, e := strconv.Atoi(input)
+	if e != nil {
+		fmt.Println("error converting input")
+	}
 
-	var sharedObject C.struct_vaccel_shared_object
 
-	// int ret = vaccel_shared_object_new(&object, argv[1]);
-	fmt.Println("File: ", filePath)
-	filePathC := C.CString(filePath)
-	err := C.vaccel_shared_object_new(&sharedObject, filePathC)
+	/* Shared Object */
+	var sharedObject vaccel.SharedObject
+
+	err := vaccel.SharedObjectNew(&sharedObject, filePath)
+
 	if err != 0 {
 		fmt.Println("error creating shared object")
 		os.Exit(int(err))
 	}
 
-	// C Library
-	var session C.struct_vaccel_session
-	flags := 0
-	// ret = vaccel_sess_init(&sess, flags);
-	err = C.vaccel_sess_init(&session, C.uint32_t(flags))
+
+	/* Session */
+	var session vaccel.Session
+
+	err = vaccel.SessionInit(&session, 0)
+
 	if err != 0 {
 		fmt.Println("error initializing session")
 		os.Exit(int(err))
 	}
 
-	// ret = vaccel_sess_register(&sess, object.resource);
-	err = C.vaccel_sess_register(&session, sharedObject.resource)
+
+	/* Register Shared Object - Session */
+	res := sharedObject.GetResource()
+	err = vaccel.SessionRegister(&session, res)
+
 	if err != 0 {
 		fmt.Println("error registering resource with session")
 		os.Exit(int(err))
 	}
 
-	// Create C pointers for input and output
-	// inputC := C.uint(strconv.Atoi(input))
-	inputInt, e := strconv.Atoi(input)
-	if e != nil {
-		fmt.Println("error converting input")
+
+	/* Create the arg-lists */
+	read  := vaccel.ArgsInit(1)
+	write := vaccel.ArgsInit(1)
+
+	if read == nil || write == nil {
+		fmt.Println("Error Creating the arg-lists")
+		os.Exit(0)
 	}
-	inputC := C.uint(inputInt)
 
-	var output [200]byte
-	// Create a C struct_vaccel_arg array for input and output
-	var readArg *C.struct_vaccel_arg
-	readArg = (*C.struct_vaccel_arg)(C.malloc(C.ulong(unsafe.Sizeof(*readArg) * 2)))
-	argArr := unsafe.Slice((*C.struct_vaccel_arg)(readArg), 2)
-	defer C.free(unsafe.Pointer(readArg))
-	argArr[0].size = C.uint(len(input))
-	argArr[0].buf = (unsafe.Pointer(&inputC))
-	argArr[1].size = C.uint(len(output))
-	argArr[1].buf = (unsafe.Pointer(&output[0]))
 
-	funcname := C.CString("mytestfunc")
-	// ret = vaccel_exec_with_resource(&sess, &object, "mytestfunc", read, 1, write, 1);
-	err = C.vaccel_exec_with_resource(&session, (&sharedObject), funcname, &argArr[0], C.ulong(1), &argArr[1], C.ulong(1))
+	/* Add a serialized arg */
+	buf  := unsafe.Pointer(&inputInt)
+	size := unsafe.Sizeof(inputInt)
+
+	if read.AddSerialArg(buf, size) != 0 {
+		fmt.Println("Error Adding Serialized arg")
+		os.Exit(0)
+	}
+
+
+	/* Define an expected argument */
+	var output int
+	buf  = unsafe.Pointer(&output)
+	size = unsafe.Sizeof(output)
+
+	if write.ExpectSerialArg(buf, size) != 0 {
+		fmt.Println("Error defining expected arg")
+		os.Exit(0)
+	}
+
+
+	/* Run the operation */
+	err = vaccel.ExecWithResource(&session, &sharedObject, "mytestfunc", read, write)
+
 	if err != 0 {
-		fmt.Println("error running exec with resource")
-		os.Exit(int(err))
+		fmt.Println("An error occured while running the operation")
+		os.Exit(err)
 	}
 
-	fmt.Printf("output: %s", output)
 
-	err = C.vaccel_sess_free(&session)
-	if err != 0 {
-		fmt.Println("error cleaning up session")
-		os.Exit(int(err))
+	/* Read the output */
+	fmt.Println("Output(1): ", C.uint(output))
+
+	/* Or */
+	outbuf := write.ExtractSerialArg(0)
+
+	cast := (*int)(outbuf)
+	val  := C.uint(*cast)
+	fmt.Println("Output(2): ", val)
+
+	/* Or */
+	outbuf = write.GetArgs().ExtractSerialArg(0)
+
+	cast = (*int)(outbuf)
+	val  = C.uint(*cast)
+	fmt.Println("Output(3): ", val)
+
+
+	/* Delete the lists */
+	if write.Delete() != 0 || read.Delete() != 0 {
+		fmt.Println("An error occured in deletion of the arg-lists")
+		os.Exit(0)
 	}
 
+
+	/* Free Session */
+	if vaccel.SessionFree(&session) != 0 {
+		fmt.Println("An error occured while freeing the session")
+	}
 }

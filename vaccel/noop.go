@@ -1,6 +1,5 @@
 package vaccel
 
-
 /*
 
 #cgo pkg-config: vaccel
@@ -10,6 +9,13 @@ package vaccel
 */
 import "C"
 
-type Resource struct {
-	c_res *C.struct_vaccel_resource
+
+
+func NoOp(sess *Session) int {
+
+	csess := sess.c_sess
+	c_ret := C.vaccel_noop(&csess)
+
+	return int(c_ret)
+
 }

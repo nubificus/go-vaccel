@@ -2,8 +2,6 @@ package vaccel
 
 /*
 
-#cgo pkg-config: vaccel
-#cgo LDFLAGS: -lvaccel -ldl
 #include <vaccel.h>
 
 */

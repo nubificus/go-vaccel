@@ -126,8 +126,8 @@ func main() {
 	}
 
 	/* Define an expected argument */
-	var uint32_Size uint32 = 4
-	expectedSize := uintptr((numEntries + 1) * uint32_Size)
+	var uint32Size uint32 = 4
+	expectedSize := uintptr((numEntries + 1) * uint32Size)
 
 	if write.ExpectNonSerialArg(expectedSize) != 0 {
 		fmt.Println("Error defining expected arg")
@@ -144,11 +144,11 @@ func main() {
 
 	/* Extract the Output */
 	outbuf := write.ExtractNonSerialArg(0, Deserialize)
-	mydata_out := (*MyData)(outbuf)
+	mydataOut := (*MyData)(outbuf)
 
 	fmt.Print("Output: ")
-	for i := 0; i < int(mydata_out.Size); i++ {
-		fmt.Print(mydata_out.Arr[i], " ")
+	for i := 0; i < int(mydataOut.Size); i++ {
+		fmt.Print(mydataOut.Arr[i], " ")
 	}
 	fmt.Println()
 

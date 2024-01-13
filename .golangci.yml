@@ -2,12 +2,19 @@ linters:
   enable:
   - errcheck
   - gofmt
+  - gocritic
   - goimports
   - gosec
-  - gocritic
   - misspell
   - revive
   - unused
+inters-settings:
+  revive:
+    ignore-generated-header: true
+    rules:
+      - name: blank-imports
+        disabled: true
+
 output:
   uniq-by-line: false
 

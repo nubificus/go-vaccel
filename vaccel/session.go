@@ -2,8 +2,6 @@ package vaccel
 
 /*
 
-#cgo pkg-config: vaccel
-#cgo LDFLAGS: -lvaccel -ldl
 #include <vaccel.h>
 
 */
@@ -15,18 +13,18 @@ type Session struct {
 
 func SessionInit(sess *Session, flags uint32) int {
 
-	return int(C.vaccel_sess_init(&sess.cSess, C.uint32_t(flags)))
+	return int(C.vaccel_sess_init(&sess.cSess, C.uint32_t(flags))) //nolint:gocritic
 
 }
 
 func SessionRegister(sess *Session, res *Resource) int {
 
-	return int(C.vaccel_sess_register(&sess.cSess, res.cRes))
+	return int(C.vaccel_sess_register(&sess.cSess, res.cRes)) //nolint:gocritic
 
 }
 
 func SessionFree(sess *Session) int {
 
-	return int(C.vaccel_sess_free(&sess.cSess))
+	return int(C.vaccel_sess_free(&sess.cSess)) //nolint:gocritic
 
 }

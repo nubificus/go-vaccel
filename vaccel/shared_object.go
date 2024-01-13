@@ -2,8 +2,6 @@ package vaccel
 
 /*
 
-#cgo pkg-config: vaccel
-#cgo LDFLAGS: -lvaccel -ldl
 #include <vaccel.h>
 
 */
@@ -15,7 +13,7 @@ type SharedObject struct {
 
 func SharedObjectNew(obj *SharedObject, path string) int {
 
-	return int(C.vaccel_shared_object_new(&obj.cObj, C.CString(path)))
+	return int(C.vaccel_shared_object_new(&obj.cObj, C.CString(path))) //nolint:gocritic
 }
 
 func (obj *SharedObject) GetResource() *Resource {

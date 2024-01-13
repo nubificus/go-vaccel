@@ -2,8 +2,6 @@ package vaccel
 
 /*
 
-#cgo pkg-config: vaccel
-#cgo LDFLAGS: -lvaccel -ldl
 #include <vaccel.h>
 
 */
@@ -23,8 +21,8 @@ func ImageClassificationFromFile(sess *Session, imagePath string) (string, int) 
 	}
 
 	cImageBytes := (*C.uchar)(&imageBytes[0])
-	c_img_buf := unsafe.Pointer(cImageBytes)
-	c_img_len := C.ulong(len(imageBytes))
+	cImgBuf := unsafe.Pointer(cImageBytes)
+	cImgLen := C.ulong(len(imageBytes))
 
 	cText := (*C.uchar)(C.malloc(C.size_t(256)))
 	cOutImageName := (*C.uchar)(C.malloc(C.size_t(256)))
@@ -35,13 +33,13 @@ func ImageClassificationFromFile(sess *Session, imagePath string) (string, int) 
 
 	csess := sess.cSess
 
-	c_ret := C.vaccel_image_classification(
-		&csess, c_img_buf, cText, cOutImageName,
-		c_img_len, C.ulong(256), C.ulong(256))
+	cRet := C.vaccel_image_classification(
+		&csess, cImgBuf, cText, cOutImageName,
+		cImgLen, C.ulong(256), C.ulong(256)) //nolint:gocritic
 
 	var golangOut string
 
-	if int(c_ret) == 0 {
+	if int(cRet) == 0 {
 
 		ptr := unsafe.Pointer(cText)
 		typeCast := (*C.char)(ptr)
@@ -53,14 +51,14 @@ func ImageClassificationFromFile(sess *Session, imagePath string) (string, int) 
 			"A problem occurred while running the Operation"
 	}
 
-	return golangOut, int(c_ret)
+	return golangOut, int(cRet)
 }
 
 func ImageClassification(sess *Session, image []byte) (string, int) {
 
 	cImageBytes := (*C.uchar)(&image[0])
-	c_img_buf := unsafe.Pointer(cImageBytes)
-	c_img_len := C.ulong(len(image))
+	cImgBuf := unsafe.Pointer(cImageBytes)
+	cImgLen := C.ulong(len(image))
 
 	cText := (*C.uchar)(C.malloc(C.size_t(256)))
 	cOutImageName := (*C.uchar)(C.malloc(C.size_t(256)))
@@ -71,13 +69,13 @@ func ImageClassification(sess *Session, image []byte) (string, int) {
 
 	csess := sess.cSess
 
-	c_ret := C.vaccel_image_classification(
-		&csess, c_img_buf, cText, cOutImageName,
-		c_img_len, C.ulong(256), C.ulong(256))
+	cRet := C.vaccel_image_classification(
+		&csess, cImgBuf, cText, cOutImageName,
+		cImgLen, C.ulong(256), C.ulong(256)) //nolint:gocritic
 
 	var golangOut string
 
-	if int(c_ret) == 0 {
+	if int(cRet) == 0 {
 
 		ptr := unsafe.Pointer(cText)
 		typeCast := (*C.char)(ptr)
@@ -89,5 +87,5 @@ func ImageClassification(sess *Session, image []byte) (string, int) {
 			"A problem occurred while running the Operation"
 	}
 
-	return golangOut, int(c_ret)
+	return golangOut, int(cRet)
 }

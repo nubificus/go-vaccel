@@ -12,19 +12,23 @@ on:
 
 jobs:
   build:
-    runs-on: [ self-hosted, "${{ matrix.archconfig }}", go]
+    runs-on: ${{ format('{0}-{1}', join(fromJSON('["go","dind","2204"]'), '-'), matrix.arch) }}
     strategy:
       matrix:
-        archconfig: [ x86_64, aarch64 ]
+        #arch: ["${{ fromJSON(inputs.runner-archs) }}"]
+        arch: [ amd64, arm64 ]
+        build-type: [release]
       fail-fast: false
+    permissions:
+      contents: read
+      pull-requests: write
+    #runs-on: [ self-hosted, "${{ matrix.archconfig }}", go]
+    #strategy:
+    #matrix:
+    #    archconfig: [ x86_64, aarch64 ]
+    #  fail-fast: false
     
     steps:
-    - name: Cleanup previous jobs
-      run: |
-        echo "Cleaning up previous runs"
-        sudo rm -rf ${{ github.workspace }}/*
-        sudo rm -rf ${{ github.workspace }}/.??*
-        
     - name: Checkout code
       uses: actions/checkout@v3
     - name: Display Go version
@@ -42,36 +46,50 @@ jobs:
 
     - name: Install vaccel
       run: |
-       git clone https://github.com/cloudkernels/vaccelrt --recursive
-       cd vaccelrt
-       mkdir build
-       cd build
-       cmake ../ -D BUILD_PLUGIN_NOOP=ON -D BUILD_EXAMPLES=ON
-       make 
-       cpack
-       sudo dpkg -i vaccel*.deb
+       ARCHITECTURE=${{ matrix.arch }}
+       # Map x86_64 to amd64 and aarch64 to arm64
+       if [[ "$ARCHITECTURE" == "amd64" ]]; then
+            ARCHITECTURE="x86_64"
+       elif [[ "$ARCHITECTURE" == "arm64" ]]; then
+            ARCHITECTURE="aarch64"
+       fi
+
+       # Output the mapped architecture
+       echo "Mapped architecture: $ARCHITECTURE"
+       echo "ARCHITECTURE=$ARCHITECTURE" >> $GITHUB_ENV
+
+       wget https://s3.nbfc.io/nbfc-assets/github/vaccel/rev/main/$ARCHITECTURE/release/vaccel_latest_${{ matrix.arch }}.deb && sudo dpkg -i vaccel_latest_${{ matrix.arch }}.deb && rm vaccel_latest_${{ matrix.arch }}.deb && sudo ldconfig
        
     - name: Build binaries
       env:
               PKG_CONFIG_PATH: /usr/local/share
       run: |
+       ARCHITECTURE=${{ matrix.arch }}
+       # Map x86_64 to amd64 and aarch64 to arm64
+       if [[ "$ARCHITECTURE" == "amd64" ]]; then
+            ARCHITECTURE="x86_64"
+       elif [[ "$ARCHITECTURE" == "arm64" ]]; then
+            ARCHITECTURE="aarch64"
+       fi
+
+       # Output the mapped architecture
+       echo "Mapped architecture: $ARCHITECTURE"
+       echo "ARCHITECTURE=$ARCHITECTURE" >> $GITHUB_ENV
+
        sudo apt update
-       sudo apt install pkg-config
+       sudo apt install libcurl4-openssl-dev
        make
 
     - name: Test binaries
       env:
-              VACCEL_BACKENDS: /usr/local/lib/libvaccel-noop.so
-              VACCEL_DEBUG_LEVEL: 4
-              LD_LIBRARY_PATH: /usr/local/lib/
+              VACCEL_LOG_LEVEL: 4
       run: |
        sudo mkdir -p /run/user/1001
        sudo chown runner.runner /run/user/1001
+       export VACCEL_PLUGINS=/usr/lib/${ARCHITECTURE}-linux-gnu/libvaccel-noop.so
+       export LD_LIBRARY_PATH=/usr/lib/${ARCHITECTURE}-linux-gnu
        ./bin/noop
-       ./bin/classify /usr/local/share/images/example.jpg
-       ./bin/exec /usr/local/lib/libmytestlib.so 10
-
-    - name: uninstall vaccel
-      run: |
-       sudo apt remove -y vaccel
+       wget https://s3.nbfc.io/imagenet/example.jpg
+       ./bin/classify example.jpg
+       ./bin/exec /usr/lib/${ARCHITECTURE}-linux-gnu/libmytestlib.so 10
 

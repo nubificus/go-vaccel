@@ -16,14 +16,18 @@ permissions:
 jobs:
   golangci:
     name: lint
-    runs-on: [ self-hosted, go, x86_64]
+    runs-on: ${{ format('{0}-{1}', join(fromJSON('["go","dind","2204"]'), '-'), matrix.arch) }}
+    strategy:
+      matrix:
+        #arch: ["${{ fromJSON(inputs.runner-archs) }}"]
+        #arch: [ amd64, arm64 ]
+        arch: [ amd64 ]
+        build-type: [release]
+      fail-fast: false
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
-    - name: Cleanup previous jobs
-      run: |
-        echo "Cleaning up previous runs"
-        sudo rm -rf ${{ github.workspace }}/*
-        sudo rm -rf ${{ github.workspace }}/.??*
- 
     - name: Checkout code
       uses: actions/checkout@v3
     - name: Display Go version
@@ -32,14 +36,7 @@ jobs:
 
     - name: Install vaccel
       run: |
-       git clone https://github.com/cloudkernels/vaccelrt --recursive
-       cd vaccelrt
-       mkdir build
-       cd build
-       cmake ../ -D BUILD_PLUGIN_NOOP=ON -D BUILD_EXAMPLES=ON
-       make 
-       cpack
-       sudo dpkg -i vaccel*.deb
+       wget https://s3.nbfc.io/nbfc-assets/github/vaccel/rev/main/x86_64/release/vaccel_latest_amd64.deb && sudo dpkg -i vaccel_latest_amd64.deb && rm vaccel_latest_amd64.deb && sudo ldconfig
        
     - name: golangci-lint
       uses: golangci/golangci-lint-action@v3
@@ -50,9 +47,5 @@ jobs:
 
           # show only new issues if it's a pull request. The default value is `false`.
           only-new-issues: true
-
-    - name: uninstall vaccel
-      run: |
-       sudo apt remove -y vaccel
 
 

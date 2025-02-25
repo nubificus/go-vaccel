@@ -18,7 +18,7 @@ func main() {
 		return
 	}
 
-	filePath := os.Args[1]
+	path := os.Args[1]
 	input := os.Args[2]
 
 	inputInt, e := strconv.Atoi(input)
@@ -26,36 +26,27 @@ func main() {
 		fmt.Println("error converting input")
 	}
 
-	/* Shared Object */
-	var sharedObject vaccel.SharedObject
-
-	err := vaccel.SharedObjectNew(&sharedObject, filePath)
-
-	if err != 0 {
-		fmt.Println("error creating shared object")
-		os.Exit(int(err))
-	}
-
-	/* Session */
 	var session vaccel.Session
-
-	err = vaccel.SessionInit(&session, 0)
-
+	err := vaccel.SessionInit(&session, 0)
 	if err != 0 {
 		fmt.Println("error initializing session")
 		os.Exit(int(err))
 	}
 
-	/* Register Shared Object - Session */
-	res := sharedObject.GetResource()
-	err = vaccel.SessionRegister(&session, res)
+	var res vaccel.Resource
+	err = vaccel.ResourceInit(&res, path, vaccel.ResourceLib)
 
+	if err != 0 {
+		fmt.Println("error creating shared object resource")
+		os.Exit(int(err))
+	}
+
+	err = vaccel.ResourceRegister(&res, &session)
 	if err != 0 {
 		fmt.Println("error registering resource with session")
 		os.Exit(int(err))
 	}
 
-	/* Create the arg-lists */
 	read := vaccel.ArgsInit(1)
 	write := vaccel.ArgsInit(1)
 
@@ -64,7 +55,6 @@ func main() {
 		os.Exit(0)
 	}
 
-	/* Add a serialized arg */
 	buf := unsafe.Pointer(&inputInt)
 	size := unsafe.Sizeof(inputInt)
 
@@ -73,7 +63,6 @@ func main() {
 		os.Exit(0)
 	}
 
-	/* Define an expected argument */
 	var output int
 	buf = unsafe.Pointer(&output)
 	size = unsafe.Sizeof(output)
@@ -83,15 +72,13 @@ func main() {
 		os.Exit(0)
 	}
 
-	/* Run the operation */
-	err = vaccel.ExecWithResource(&session, &sharedObject, "mytestfunc", read, write)
+	err = vaccel.ExecWithResource(&session, &res, "mytestfunc", read, write)
 
 	if err != 0 {
 		fmt.Println("An error occurred while running the operation")
 		os.Exit(err)
 	}
 
-	/* Read the output */
 	fmt.Println("Output(1): ", C.uint(output))
 
 	/* Or */
@@ -108,14 +95,20 @@ func main() {
 	val = C.uint(*cast)
 	fmt.Println("Output(3): ", val)
 
-	/* Delete the lists */
 	if write.Delete() != 0 || read.Delete() != 0 {
 		fmt.Println("An error occurred in deletion of the arg-lists")
 		os.Exit(0)
 	}
 
-	/* Free Session */
-	if vaccel.SessionFree(&session) != 0 {
-		fmt.Println("An error occurred while freeing the session")
+	if vaccel.ResourceUnregister(&res, &session) != 0 {
+		fmt.Println("An error occurred while unregistering the resource")
+	}
+
+	if vaccel.ResourceRelease(&res) != 0 {
+		fmt.Println("An error occurred while releasing the resource")
+	}
+
+	if vaccel.SessionRelease(&session) != 0 {
+		fmt.Println("An error occurred while releasing the session")
 	}
 }

@@ -27,7 +27,7 @@ func main() {
 	}
 
 	/* Free Session */
-	if vaccel.SessionFree(&session) != 0 {
+	if vaccel.SessionRelease(&session) != 0 {
 		fmt.Println("An error occurred while freeing the session")
 	}
 

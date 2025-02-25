@@ -9,20 +9,16 @@ package vaccel
 */
 import "C"
 
-func ExecWithResource(sess *Session, obj *SharedObject, funcname string,
-	read *ArgList, write *ArgList) int {
-
-	csess := sess.cSess
-	cobj := obj.cObj
+func ExecWithResource(sess *Session, res *Resource, funcname string,
+		      read *ArgList, write *ArgList) int {
 	cfunc := C.CString(funcname)
-
 	cread := read.cList.list
 	cwrite := write.cList.list
 
 	cNrRead := C.ulong(read.cList.size)
 	cNrWrite := C.ulong(write.cList.size)
 
-	cRet := C.vaccel_exec_with_resource(&csess, &cobj, cfunc, cread, cNrRead, cwrite, cNrWrite) //nolint:gocritic
+	cRet := C.vaccel_exec_with_resource(&sess.cSess, &res.cRes, cfunc, cread, cNrRead, cwrite, cNrWrite) //nolint:gocritic
 
 	return int(cRet)
 

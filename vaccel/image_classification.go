@@ -1,7 +1,8 @@
 package vaccel
 
 /*
-
+#cgo pkg-config: vaccel
+#cgo LDFLAGS: -lvaccel -ldl
 #include <vaccel.h>
 
 */
@@ -31,22 +32,17 @@ func ImageClassificationFromFile(sess *Session, imagePath string) (string, int) 
 	defer C.free(unsafe.Pointer(cText))
 	defer C.free(unsafe.Pointer(cOutImageName))
 
-	csess := sess.cSess
-
 	cRet := C.vaccel_image_classification(
-		&csess, cImgBuf, cText, cOutImageName,
+		&sess.cSess, cImgBuf, cText, cOutImageName,
 		cImgLen, C.ulong(256), C.ulong(256)) //nolint:gocritic
 
 	var golangOut string
 
 	if int(cRet) == 0 {
-
 		ptr := unsafe.Pointer(cText)
 		typeCast := (*C.char)(ptr)
 		golangOut = C.GoString(typeCast)
-
 	} else {
-
 		golangOut =
 			"A problem occurred while running the Operation"
 	}
@@ -67,22 +63,17 @@ func ImageClassification(sess *Session, image []byte) (string, int) {
 	defer C.free(unsafe.Pointer(cText))
 	defer C.free(unsafe.Pointer(cOutImageName))
 
-	csess := sess.cSess
-
 	cRet := C.vaccel_image_classification(
-		&csess, cImgBuf, cText, cOutImageName,
+		&sess.cSess, cImgBuf, cText, cOutImageName,
 		cImgLen, C.ulong(256), C.ulong(256)) //nolint:gocritic
 
 	var golangOut string
 
 	if int(cRet) == 0 {
-
 		ptr := unsafe.Pointer(cText)
 		typeCast := (*C.char)(ptr)
 		golangOut = C.GoString(typeCast)
-
 	} else {
-
 		golangOut =
 			"A problem occurred while running the Operation"
 	}

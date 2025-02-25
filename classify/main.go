@@ -14,10 +14,8 @@ func main() {
 		return
 	}
 
-	/* Get the filename from command line argument */
-	filePath := os.Args[1]
+	path := os.Args[1]
 
-	/* Session */
 	var session vaccel.Session
 
 	err := vaccel.SessionInit(&session, 0)
@@ -30,7 +28,7 @@ func main() {
 	var outText string
 
 	/* Run the Operation providing the path */
-	outText, err = vaccel.ImageClassificationFromFile(&session, filePath)
+	outText, err = vaccel.ImageClassificationFromFile(&session, path)
 
 	if err != 0 {
 		fmt.Println("Image Classification failed")
@@ -39,8 +37,7 @@ func main() {
 
 	fmt.Println("Output(1): ", outText)
 
-	/* Or by providing the bytes */
-	imageBytes, e := os.ReadFile(filePath)
+	imageBytes, e := os.ReadFile(path)
 	if e != nil {
 		fmt.Printf("Error reading file: %s\n", e)
 		os.Exit(1)
@@ -55,8 +52,7 @@ func main() {
 
 	fmt.Println("Output(2): ", outText)
 
-	/* Free Session */
-	if vaccel.SessionFree(&session) != 0 {
+	if vaccel.SessionRelease(&session) != 0 {
 		fmt.Println("An error occurred while freeing the session")
 	}
 }

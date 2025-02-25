@@ -78,29 +78,24 @@ func Deserialize(buf unsafe.Pointer) unsafe.Pointer {
 func main() {
 
 	/* Shared Object */
-	var sharedObject vaccel.SharedObject
+	var sharedObject vaccel.Resource
 
-	err := vaccel.SharedObjectNew(&sharedObject, "/usr/local/lib/libmytestlib.so")
+	err := vaccel.ResourceInit(&sharedObject, "/usr/local/lib/libmytestlib.so", vaccel.ResourceLib)
 
 	if err != 0 {
 		fmt.Println("error creating shared object")
 		os.Exit(int(err))
 	}
 
-	/* Session */
 	var session vaccel.Session
 
 	err = vaccel.SessionInit(&session, 0)
-
 	if err != 0 {
 		fmt.Println("error initializing session")
 		os.Exit(int(err))
 	}
 
-	/* Register Shared Object - Session */
-	res := sharedObject.GetResource()
-	err = vaccel.SessionRegister(&session, res)
-
+	err = vaccel.ResourceRegister(&sharedObject, &session)
 	if err != 0 {
 		fmt.Println("error registering resource with session")
 		os.Exit(int(err))
@@ -136,7 +131,6 @@ func main() {
 
 	/* Run the operation */
 	err = vaccel.ExecWithResource(&session, &sharedObject, "mytestfunc_nonser", read, write)
-
 	if err != 0 {
 		fmt.Println("An error occurred while running the operation")
 		os.Exit(err)
@@ -158,8 +152,15 @@ func main() {
 		os.Exit(0)
 	}
 
-	/* Free Session */
-	if vaccel.SessionFree(&session) != 0 {
+	if vaccel.ResourceUnregister(&sharedObject, &session) != 0 {
+		fmt.Println("An error occured while unregistering the resource")
+	}
+
+	if vaccel.ResourceRelease(&sharedObject) != 0 {
+		fmt.Println("An error occured while releasing the resource")
+	}
+
+	if vaccel.SessionRelease(&session) != 0 {
 		fmt.Println("An error occurred while freeing the session")
 	}
 }

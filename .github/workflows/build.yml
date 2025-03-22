@@ -12,21 +12,17 @@ on:
 
 jobs:
   build:
-    runs-on: ${{ format('{0}-{1}', join(fromJSON('["go","dind","2204"]'), '-'), matrix.arch) }}
+    runs-on: ${{ format('{0}-{1}', join(fromJSON('["base","dind","2204"]'), '-'), matrix.arch) }}
     strategy:
       matrix:
-        #arch: ["${{ fromJSON(inputs.runner-archs) }}"]
+        # FIXME: pending armv7l support
+        #arch: [ amd64, arm64, arm ]
         arch: [ amd64, arm64 ]
         build-type: [release]
       fail-fast: false
     permissions:
       contents: read
       pull-requests: write
-    #runs-on: [ self-hosted, "${{ matrix.archconfig }}", go]
-    #strategy:
-    #matrix:
-    #    archconfig: [ x86_64, aarch64 ]
-    #  fail-fast: false
     
     steps:
     - name: Checkout code
@@ -34,15 +30,6 @@ jobs:
     - name: Display Go version
       run: |
         go version
-
-    - name: Find SHA
-      run: |
-        if [[ "${{github.event.pull_request.head.sha}}" != "" ]]
-        then
-          echo "ARTIFACT_SHA=$(echo ${{github.event.pull_request.head.ref}})" >> $GITHUB_ENV
-        else
-          echo "ARTIFACT_SHA=$(echo ${GITHUB_REF##*/})" >> $GITHUB_ENV
-        fi
 
     - name: Install vaccel
       run: |
@@ -52,44 +39,28 @@ jobs:
             ARCHITECTURE="x86_64"
        elif [[ "$ARCHITECTURE" == "arm64" ]]; then
             ARCHITECTURE="aarch64"
+       elif [[ "$ARCHITECTURE" == "arm" ]]; then
+            ARCHITECTURE="armv7l"
+            EXTRA_ARCH="hf"
        fi
 
        # Output the mapped architecture
        echo "Mapped architecture: $ARCHITECTURE"
        echo "ARCHITECTURE=$ARCHITECTURE" >> $GITHUB_ENV
 
-       wget https://s3.nbfc.io/nbfc-assets/github/vaccel/rev/main/$ARCHITECTURE/release/vaccel_latest_${{ matrix.arch }}.deb && sudo dpkg -i vaccel_latest_${{ matrix.arch }}.deb && rm vaccel_latest_${{ matrix.arch }}.deb && sudo ldconfig
+       wget https://s3.nbfc.io/nbfc-assets/github/vaccel/rev/main/$ARCHITECTURE/release/vaccel_latest_${{ matrix.arch }}${EXTRA_ARCH}.deb && sudo dpkg -i vaccel_latest_${{ matrix.arch }}${EXTRA_ARCH}.deb && rm vaccel_latest_${{ matrix.arch }}${EXTRA_ARCH}.deb && sudo ldconfig
        
     - name: Build binaries
-      env:
-              PKG_CONFIG_PATH: /usr/local/share
       run: |
-       ARCHITECTURE=${{ matrix.arch }}
-       # Map x86_64 to amd64 and aarch64 to arm64
-       if [[ "$ARCHITECTURE" == "amd64" ]]; then
-            ARCHITECTURE="x86_64"
-       elif [[ "$ARCHITECTURE" == "arm64" ]]; then
-            ARCHITECTURE="aarch64"
-       fi
-
-       # Output the mapped architecture
-       echo "Mapped architecture: $ARCHITECTURE"
-       echo "ARCHITECTURE=$ARCHITECTURE" >> $GITHUB_ENV
-
-       sudo apt update
-       sudo apt install libcurl4-openssl-dev
        make
 
     - name: Test binaries
       env:
-              VACCEL_LOG_LEVEL: 4
+       VACCEL_LOG_LEVEL: 4
+       VACCEL_PLUGINS: /usr/lib/${{ env.ARCHITECTURE }}-linux-gnu/libvaccel-noop.so
+       LD_LIBRARY_PATH: /usr/lib/${{ env.ARCHITECTURE }}-linux-gnu
       run: |
-       sudo mkdir -p /run/user/1001
-       sudo chown runner.runner /run/user/1001
-       export VACCEL_PLUGINS=/usr/lib/${ARCHITECTURE}-linux-gnu/libvaccel-noop.so
-       export LD_LIBRARY_PATH=/usr/lib/${ARCHITECTURE}-linux-gnu
        ./bin/noop
-       wget https://s3.nbfc.io/imagenet/example.jpg
-       ./bin/classify example.jpg
+       ./bin/classify /usr/share/vaccel/images/example.jpg
        ./bin/exec /usr/lib/${ARCHITECTURE}-linux-gnu/libmytestlib.so 10
 

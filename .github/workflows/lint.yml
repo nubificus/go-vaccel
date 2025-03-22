@@ -16,11 +16,9 @@ permissions:
 jobs:
   golangci:
     name: lint
-    runs-on: ${{ format('{0}-{1}', join(fromJSON('["go","dind","2204"]'), '-'), matrix.arch) }}
+    runs-on: ${{ format('{0}-{1}', join(fromJSON('["base","dind","2204"]'), '-'), matrix.arch) }}
     strategy:
       matrix:
-        #arch: ["${{ fromJSON(inputs.runner-archs) }}"]
-        #arch: [ amd64, arm64 ]
         arch: [ amd64 ]
         build-type: [release]
       fail-fast: false
@@ -43,7 +41,7 @@ jobs:
       env:
               PKG_CONFIG_PATH: /usr/local/share
       with:
-          version: v1.53
+          version: v1.64
 
           # show only new issues if it's a pull request. The default value is `false`.
           only-new-issues: true

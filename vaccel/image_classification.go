@@ -25,7 +25,7 @@ func ImageClassificationFromFile(sess *Session, imagePath string) (string, int) 
 
 	cImageBytes := (*C.uchar)(&imageBytes[0])
 	cImgBuf := unsafe.Pointer(cImageBytes)
-	cImgLen := C.ulong(len(imageBytes))
+	cImgLen := C.size_t(len(imageBytes))
 
 	cText := (*C.uchar)(C.malloc(C.size_t(256)))
 	cOutImageName := (*C.uchar)(C.malloc(C.size_t(256)))
@@ -36,7 +36,7 @@ func ImageClassificationFromFile(sess *Session, imagePath string) (string, int) 
 
 	cRet := C.vaccel_image_classification(
 		&sess.cSess, cImgBuf, cText, cOutImageName,
-		cImgLen, C.ulong(256), C.ulong(256)) //nolint:gocritic
+		cImgLen, C.size_t(256), C.size_t(256)) //nolint:gocritic
 
 	var golangOut string
 
@@ -56,7 +56,7 @@ func ImageClassification(sess *Session, image []byte) (string, int) {
 
 	cImageBytes := (*C.uchar)(&image[0])
 	cImgBuf := unsafe.Pointer(cImageBytes)
-	cImgLen := C.ulong(len(image))
+	cImgLen := C.size_t(len(image))
 
 	cText := (*C.uchar)(C.malloc(C.size_t(256)))
 	cOutImageName := (*C.uchar)(C.malloc(C.size_t(256)))
@@ -67,7 +67,7 @@ func ImageClassification(sess *Session, image []byte) (string, int) {
 
 	cRet := C.vaccel_image_classification(
 		&sess.cSess, cImgBuf, cText, cOutImageName,
-		cImgLen, C.ulong(256), C.ulong(256)) //nolint:gocritic
+		cImgLen, C.size_t(256), C.size_t(256)) //nolint:gocritic
 
 	var golangOut string
 

@@ -155,11 +155,11 @@ func main() {
 	}
 
 	if vaccel.ResourceUnregister(&sharedObject, &session) != 0 {
-		fmt.Println("An error occured while unregistering the resource")
+		fmt.Println("An error occurred while unregistering the resource")
 	}
 
 	if vaccel.ResourceRelease(&sharedObject) != 0 {
-		fmt.Println("An error occured while releasing the resource")
+		fmt.Println("An error occurred while releasing the resource")
 	}
 
 	if vaccel.SessionRelease(&session) != 0 {

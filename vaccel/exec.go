@@ -12,7 +12,7 @@ package vaccel
 import "C"
 
 func ExecWithResource(sess *Session, res *Resource, funcname string,
-		      read *ArgList, write *ArgList) int {
+	read *ArgList, write *ArgList) int {
 	cfunc := C.CString(funcname)
 	cread := read.cList.list
 	cwrite := write.cList.list

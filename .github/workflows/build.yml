@@ -2,22 +2,23 @@ name: Build
 
 on:
   push:
-      branches:
-        - main
-
+      branches: [main]
   pull_request:
-      branches:
-        - main
+      branches: [main]
+
   workflow_dispatch:
+
+env:
+  RUNNER_ARCH_MAP: '[{"amd64":"x86_64", "arm64":"aarch64", "arm":"armv7l"}]'
+  GO_ARCH_MAP: '[{"amd64":"amd64", "arm64":"arm64", "arm":"armv6l"}]'
+  DEB_ARCH_MAP: '[{"amd64":"amd64", "arm64":"arm64", "arm":"armhf"}]'
 
 jobs:
   build:
-    runs-on: ${{ format('{0}-{1}', join(fromJSON('["base","dind","2204"]'), '-'), matrix.arch) }}
+    runs-on: ${{ format('{0}-{1}', 'base-dind-2204', matrix.arch) }}
     strategy:
       matrix:
-        # FIXME: pending armv7l support
-        #arch: [ amd64, arm64, arm ]
-        arch: [ amd64, arm64 ]
+        arch: [amd64, arm64, arm]
         build-type: [release]
       fail-fast: false
     permissions:
@@ -26,41 +27,32 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
+
+    - name: Set arch variables
+      run: |
+        echo "ARCH=${{ fromJson(env.RUNNER_ARCH_MAP)[0][matrix.arch] }}" >> "$GITHUB_ENV"
+        echo "DEB_ARCH=${{ fromJson(env.DEB_ARCH_MAP)[0][matrix.arch] }}" >> "$GITHUB_ENV"
+
     - name: Display Go version
       run: |
         go version
 
     - name: Install vaccel
       run: |
-       ARCHITECTURE=${{ matrix.arch }}
-       # Map x86_64 to amd64 and aarch64 to arm64
-       if [[ "$ARCHITECTURE" == "amd64" ]]; then
-            ARCHITECTURE="x86_64"
-       elif [[ "$ARCHITECTURE" == "arm64" ]]; then
-            ARCHITECTURE="aarch64"
-       elif [[ "$ARCHITECTURE" == "arm" ]]; then
-            ARCHITECTURE="armv7l"
-            EXTRA_ARCH="hf"
-       fi
-
-       # Output the mapped architecture
-       echo "Mapped architecture: $ARCHITECTURE"
-       echo "ARCHITECTURE=$ARCHITECTURE" >> $GITHUB_ENV
-
-       wget https://s3.nbfc.io/nbfc-assets/github/vaccel/rev/main/$ARCHITECTURE/release/vaccel_latest_${{ matrix.arch }}${EXTRA_ARCH}.deb && sudo dpkg -i vaccel_latest_${{ matrix.arch }}${EXTRA_ARCH}.deb && rm vaccel_latest_${{ matrix.arch }}${EXTRA_ARCH}.deb && sudo ldconfig
+       wget "https://s3.nbfc.io/nbfc-assets/github/vaccel/rev/main/${{ env.ARCH }}/release/vaccel_latest_${{ env.DEB_ARCH }}.deb"
+       sudo dpkg -i vaccel_latest_${{ env.DEB_ARCH }}.deb
+       rm vaccel_latest_${{ env.DEB_ARCH }}.deb
+       sudo ldconfig
        
     - name: Build binaries
-      run: |
-       make
+      run: make
 
     - name: Test binaries
       env:
        VACCEL_LOG_LEVEL: 4
-       VACCEL_PLUGINS: /usr/lib/${{ env.ARCHITECTURE }}-linux-gnu/libvaccel-noop.so
-       LD_LIBRARY_PATH: /usr/lib/${{ env.ARCHITECTURE }}-linux-gnu
+       VACCEL_PLUGINS: libvaccel-noop.so
       run: |
        ./bin/noop
-       ./bin/classify /usr/share/vaccel/images/example.jpg
-       ./bin/exec /usr/lib/${ARCHITECTURE}-linux-gnu/libmytestlib.so 10
-
+       ./bin/classify "$(pkg-config --variable=prefix vaccel)/share/vaccel/images/example.jpg"
+       ./bin/exec "$(pkg-config --variable=libdir vaccel)/libmytestlib.so" 10

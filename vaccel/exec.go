@@ -17,8 +17,8 @@ func ExecWithResource(sess *Session, res *Resource, funcname string,
 	cread := read.cList.list
 	cwrite := write.cList.list
 
-	cNrRead := C.ulong(read.cList.size)
-	cNrWrite := C.ulong(write.cList.size)
+	cNrRead := C.size_t(read.cList.size)
+	cNrWrite := C.size_t(write.cList.size)
 
 	cRet := C.vaccel_exec_with_resource(&sess.cSess, &res.cRes, cfunc, cread, cNrRead, cwrite, cNrWrite) //nolint:gocritic
 

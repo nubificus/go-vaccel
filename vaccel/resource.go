@@ -27,7 +27,7 @@ func (t ResourceType) ToCEnum() C.vaccel_resource_type_t {
 }
 
 func ResourceInit(res *Resource, path string, resType ResourceType) int {
-	return int(C.vaccel_resource_init(&res.cRes, C.CString(path), resType.ToCEnum()))
+	return int(C.vaccel_resource_init(&res.cRes, C.CString(path), resType.ToCEnum())) //nolint:gocritic
 }
 
 func ResourceRegister(res *Resource, sess *Session) int {

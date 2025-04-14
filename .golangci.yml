@@ -1,23 +1,32 @@
-linters:
-  enable:
-  - errcheck
-  - gofmt
-  - gocritic
-  - goimports
-  - gosec
-  - misspell
-  - revive
-  - unused
-inters-settings:
-  revive:
-    ignore-generated-header: true
-    rules:
-      - name: blank-imports
-        disabled: true
-
-output:
-  uniq-by-line: false
-
+version: "2"
 run:
   issues-exit-code: 1
-  timeout: 5m
+linters:
+  enable:
+    - gocritic
+    - gosec
+    - misspell
+    - revive
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+issues:
+  uniq-by-line: false
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

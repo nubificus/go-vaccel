@@ -1,26 +1,21 @@
-
-default: build
-
-build: noop classify exec nonser
+.PHONY: all
+all: noop classify exec nonser
 
 prepare:
 	@go mod tidy
-	@mkdir -p bin
-
+	@mkdir -p bin/
 
 noop: prepare
-	go build -o bin/noop noop/main.go
+	go build -o bin/noop examples/noop/main.go
 
 classify: prepare
-	go build -o bin/classify classify/main.go
+	go build -o bin/classify examples/classify/main.go
 
 exec: prepare
-	go build -o bin/exec exec/main.go
+	go build -o bin/exec examples/exec/main.go
 
 nonser: prepare 
-	go build -o bin/nonser nonser/main.go
+	go build -o bin/nonser examples/nonser/main.go
 
 clean:
-	rm bin/*
-
-all: noop classify exec nonser
+	rm -rf bin
